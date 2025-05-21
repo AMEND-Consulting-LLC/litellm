@@ -1825,6 +1825,7 @@ def supports_response_schema(
     PROVIDERS_GLOBALLY_SUPPORT_RESPONSE_SCHEMA = [
         litellm.LlmProviders.PREDIBASE,
         litellm.LlmProviders.FIREWORKS_AI,
+        litellm.LlmProviders.LM_STUDIO,
     ]
 
     if custom_llm_provider in PROVIDERS_GLOBALLY_SUPPORT_RESPONSE_SCHEMA:
@@ -1964,6 +1965,28 @@ def supports_prompt_caching(
         model=model,
         custom_llm_provider=custom_llm_provider,
         key="supports_prompt_caching",
+    )
+
+def supports_computer_use(
+    model: str, custom_llm_provider: Optional[str] = None
+) -> bool:
+    """
+    Check if the given model supports computer use and return a boolean value.
+
+    Parameters:
+    model (str): The model name to be checked.
+    custom_llm_provider (Optional[str]): The provider to be checked.
+
+    Returns:
+    bool: True if the model supports computer use, False otherwise.
+
+    Raises:
+    Exception: If the given model is not found or there's an error in retrieval.
+    """
+    return _supports_factory(
+        model=model,
+        custom_llm_provider=custom_llm_provider,
+        key="supports_computer_use",
     )
 
 
@@ -4270,6 +4293,7 @@ def _get_model_info_helper(  # noqa: PLR0915
                 supports_tool_choice=None,
                 supports_assistant_prefill=None,
                 supports_prompt_caching=None,
+                supports_computer_use=None,
                 supports_pdf_input=None,
             )
         elif (
@@ -4443,6 +4467,7 @@ def _get_model_info_helper(  # noqa: PLR0915
                 ),
                 supports_web_search=_model_info.get("supports_web_search", False),
                 supports_reasoning=_model_info.get("supports_reasoning", False),
+                supports_computer_use=_model_info.get("supports_computer_use", False),
                 search_context_cost_per_query=_model_info.get(
                     "search_context_cost_per_query", None
                 ),
@@ -4885,6 +4910,11 @@ def validate_environment(  # noqa: PLR0915
                 keys_in_environment = True
             else:
                 missing_keys.append("DEEPINFRA_API_KEY")
+        elif custom_llm_provider == "featherless_ai":
+            if "FEATHERLESS_AI_API_KEY" in os.environ:
+                keys_in_environment = True
+            else:
+                missing_keys.append("FEATHERLESS_AI_API_KEY")
         elif custom_llm_provider == "gemini":
             if "GEMINI_API_KEY" in os.environ:
                 keys_in_environment = True
@@ -6410,6 +6440,8 @@ class ProviderConfigManager:
             return litellm.TritonConfig()
         elif litellm.LlmProviders.PETALS == provider:
             return litellm.PetalsConfig()
+        elif litellm.LlmProviders.FEATHERLESS_AI == provider:
+            return litellm.FeatherlessAIConfig()
         elif litellm.LlmProviders.NOVITA == provider:
             return litellm.NovitaConfig()
         elif litellm.LlmProviders.BEDROCK == provider:
@@ -6481,7 +6513,10 @@ class ProviderConfigManager:
         api_base: Optional[str],
         present_version_params: List[str],
     ) -> BaseRerankConfig:
-        if litellm.LlmProviders.COHERE == provider:
+        if (
+            litellm.LlmProviders.COHERE == provider
+            or litellm.LlmProviders.COHERE_CHAT == provider
+        ):
             if should_use_cohere_v1_client(api_base, present_version_params):
                 return litellm.CohereRerankConfig()
             else:
@@ -6876,3 +6911,11 @@ def jsonify_tools(tools: List[Any]) -> List[Dict]:
         if isinstance(tool, dict):
             new_tools.append(tool)
     return new_tools
+
+
+def get_empty_usage() -> Usage:
+    return Usage(
+        prompt_tokens=0,
+        completion_tokens=0,
+        total_tokens=0,
+    )

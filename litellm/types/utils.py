@@ -111,6 +111,7 @@ class ProviderSpecificModelInfo(TypedDict, total=False):
     supports_tool_choice: Optional[bool]
     supports_assistant_prefill: Optional[bool]
     supports_prompt_caching: Optional[bool]
+    supports_computer_use: Optional[bool]
     supports_audio_input: Optional[bool]
     supports_embedding_image_input: Optional[bool]
     supports_audio_output: Optional[bool]
@@ -2176,6 +2177,7 @@ class LlmProviders(str, Enum):
     XINFERENCE = "xinference"
     FIREWORKS_AI = "fireworks_ai"
     FRIENDLIAI = "friendliai"
+    FEATHERLESS_AI = "featherless_ai"
     WATSONX = "watsonx"
     WATSONX_TEXT = "watsonx_text"
     TRITON = "triton"
